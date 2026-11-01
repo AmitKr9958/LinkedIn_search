@@ -6,6 +6,8 @@ from linkpilot.db import init_db
 from linkpilot.repository import Repository
 from linkpilot.ai import DraftService
 from linkpilot.config import get_settings
+from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
+from linkpilot.scoring import relevance_score
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -51,6 +53,26 @@ elif page == "Companies":
 
 elif page == "Prospects":
     st.subheader("Professional prospects")
+    st.caption("You can import records from a CSV you are authorized to use. The app does not collect LinkedIn profile data itself.")
+    upload = st.file_uploader("Import prospects CSV", type=["csv"])
+    if upload is not None and st.button("Import CSV prospects"):
+        try:
+            imported = parse_prospect_csv(upload.getvalue())
+            existing = {(p["full_name"].casefold(), p["company"].casefold()) for p in repo.list_prospects()}
+            added = 0
+            skipped = 0
+            for row in imported:
+                key = (row["full_name"].casefold(), row["company"].casefold())
+                if key in existing:
+                    skipped += 1
+                    continue
+                repo.add_prospect(**row)
+                existing.add(key)
+                added += 1
+            st.success(f"Imported {added} prospects; skipped {skipped} duplicates.")
+        except Exception as exc:
+            st.error(f"CSV import failed: {exc}")
+
     companies = repo.company_names()
     with st.form("prospect_form", clear_on_submit=True):
         full_name = st.text_input("Full name")
@@ -70,7 +92,18 @@ elif page == "Prospects":
     prospects = repo.list_prospects()
     if prospects:
         st.divider()
-        st.dataframe(prospects, use_container_width=True, hide_index=True)
+        display_rows = []
+        for p in prospects:
+            p_view = dict(p)
+            p_view["relevance_score"] = relevance_score(p["category"], p["title"])
+            display_rows.append(p_view)
+        st.dataframe(display_rows, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Export prospects CSV",
+            data=export_prospects_csv(prospects),
+            file_name="linkpilot_prospects.csv",
+            mime="text/csv",
+        )
         options = {f"{p['full_name']} — {p['title']} at {p['company']} (#{p['id']})": p["id"] for p in prospects}
         chosen = st.selectbox("Choose a prospect", list(options))
         prospect = repo.get_prospect(options[chosen])
