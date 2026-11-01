@@ -104,3 +104,21 @@ def test_location_filter_supports_cities_array():
 def test_search_rejects_unknown_location(monkeypatch):
     with pytest.raises(ValueError, match="supported location"):
         search_india_jobs(location="Moon")
+
+
+
+def test_search_rejects_invalid_experience_range():
+    with pytest.raises(ValueError, match="cannot exceed"):
+        search_india_jobs(min_experience=9, max_experience=5)
+
+
+def test_search_fails_if_provider_reports_ignored_filters(monkeypatch):
+    monkeypatch.setattr(
+        "linkpilot.free_jobs.urlopen",
+        lambda request, timeout: FakeResponse({
+            "data": [],
+            "meta": {"ignored_params": ["cities"]},
+        }),
+    )
+    with pytest.raises(FreeJobsError, match="ignored requested filters"):
+        search_india_jobs(location="Delhi NCR")
