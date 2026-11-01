@@ -306,11 +306,11 @@ elif page == "Prospects":
         options = {f"{p['full_name']} — {p['title']} at {p['company']} (#{p['id']})": p["id"] for p in prospects}
         chosen = st.selectbox("Choose a prospect", list(options))
         prospect = repo.get_prospect(options[chosen])
-        status_options = ["not_contacted", "drafted", "approved", "connected", "replied", "archived"]
+        status_options = ["not_contacted", "drafted", "approved", "connection_sent", "connected", "replied", "archived"]
         current_status = prospect.get("outreach_status", "not_contacted")
         new_status = st.selectbox("Outreach status", status_options,
                                   index=status_options.index(current_status) if current_status in status_options else 0)
-        if st.button("Update outreach status"):
+        if st.button("Update outreach status", disabled=(new_status == current_status)):
             repo.update_prospect_status(prospect["id"], new_status)
             st.success("Outreach status updated.")
         if st.button("Generate personalized note", type="primary"):
