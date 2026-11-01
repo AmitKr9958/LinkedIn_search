@@ -37,6 +37,7 @@ class Repository:
                           (message, row["id"]))
             else:
                 c.execute("INSERT INTO drafts(prospect_id,message) VALUES(?,?)", (prospect_id, message))
+            c.execute("UPDATE prospects SET outreach_status='drafted' WHERE id=?", (prospect_id,))
 
     def list_drafts(self):
         with connect() as c:
@@ -51,6 +52,10 @@ class Repository:
         with connect() as c:
             c.execute("UPDATE drafts SET message=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
                       (message, status, draft_id))
+            if status == "approved":
+                row = c.execute("SELECT prospect_id FROM drafts WHERE id=?", (draft_id,)).fetchone()
+                if row:
+                    c.execute("UPDATE prospects SET outreach_status='approved' WHERE id=?", (row["prospect_id"],))
 
     def stats(self):
         with connect() as c:
