@@ -10,6 +10,7 @@ from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
 from linkpilot.scoring import relevance_score
 from linkpilot.discovery import build_public_search_url, build_company_search_url, build_search_query, ROLE_SEARCH_TERMS
 from linkpilot.public_search import search_public_professionals, PublicSearchError
+from linkpilot.free_jobs import search_india_jobs, filter_jobs_by_location, FreeJobsError
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -20,7 +21,7 @@ st.title("🤝 LinkPilot AI")
 st.caption("Professional networking research and personalized outreach — with your approval.")
 with st.sidebar:
     st.header("Workspace")
-    page = st.radio("Navigate", ["Overview", "Companies", "Discovery", "Prospects", "Approval queue", "Settings"])
+    page = st.radio("Navigate", ["Overview", "Companies", "Jobs", "Discovery", "Prospects", "Approval queue", "Settings"])
     st.divider()
     st.info("Human approval required. No LinkedIn login, scraping, browser automation or automatic sending.")
 
@@ -57,6 +58,77 @@ elif page == "Companies":
                 except Exception as exc:
                     st.error(f"Could not save company: {exc}")
     st.dataframe(repo.list_companies(), use_container_width=True, hide_index=True)
+
+
+elif page == "Jobs":
+    st.subheader("Free job discovery — India")
+    st.caption(
+        "Uses freehire's public, no-key job-search API. Search results are hiring signals, "
+        "not verified recruiter/contact records."
+    )
+    st.info(
+        "No API key is needed. The unauthenticated freehire endpoint is documented for "
+        "personal, non-commercial use and is rate-limited. Link back to original job posts."
+    )
+    job_query = st.text_input(
+        "Job keywords",
+        '"Power BI" OR "Business Intelligence" OR "Data Analyst" OR "Microsoft Fabric" OR "Reporting Analyst"',
+    )
+    job_location = st.selectbox(
+        "Location filter",
+        ["Delhi NCR", "India", "Gurugram", "Noida", "Delhi", "Jaipur"],
+        index=0,
+    )
+    job_limit = st.slider("Maximum jobs to retrieve", min_value=10, max_value=100, value=50, step=10)
+    if st.button("Search free job listings", type="primary"):
+        try:
+            with st.spinner("Searching freehire public job listings..."):
+                jobs = search_india_jobs(job_query, limit=job_limit)
+                filtered_jobs = filter_jobs_by_location(jobs, job_location)
+            st.session_state["freehire_jobs"] = filtered_jobs
+            st.session_state["freehire_location"] = job_location
+            st.success(
+                f"Received {len(jobs)} India listing(s); "
+                f"{len(filtered_jobs)} match the {job_location} filter."
+            )
+        except (FreeJobsError, ValueError) as exc:
+            st.error(str(exc))
+
+    jobs = st.session_state.get("freehire_jobs", [])
+    if jobs:
+        rows = []
+        for job in jobs:
+            rows.append({
+                "Job title": job.get("title", ""),
+                "Company": job.get("company", ""),
+                "Location": job.get("location", ""),
+                "Posted": job.get("posted_at", ""),
+                "Experience (min)": (job.get("enrichment") or {}).get("experience_years_min", ""),
+                "Apply link": job.get("url", ""),
+                "Source": job.get("source", ""),
+            })
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+        companies_to_save = sorted({
+            str(job.get("company", "")).strip()
+            for job in jobs if str(job.get("company", "")).strip()
+        })
+        st.caption("Save companies found in these postings to your company directory.")
+        if st.button("Save discovered hiring companies"):
+            known = {name.casefold() for name in repo.company_names()}
+            added = 0
+            for company_name in companies_to_save:
+                if company_name.casefold() not in known:
+                    repo.add_company(
+                        company_name,
+                        hiring_focus="Found in freehire job listings; verify current vacancies",
+                    )
+                    known.add(company_name.casefold())
+                    added += 1
+            st.success(f"Saved {added} new company/companies. Existing companies were skipped.")
+        st.caption("Open each original application link to verify the vacancy and apply on the employer/board site.")
+    else:
+        st.info("Run a search to see current India job listings. The API may return no matches for a narrow keyword or location.")
+    st.markdown("[freehire API documentation](https://freehire.me/docs/api) · [public-apis Jobs catalogue](https://github.com/public-apis/public-apis#jobs)")
 
 elif page == "Discovery":
     st.subheader("Company discovery")
