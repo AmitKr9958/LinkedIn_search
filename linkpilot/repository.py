@@ -1,3 +1,4 @@
+from datetime import datetime
 from linkpilot.db import connect
 
 class Repository:
@@ -92,9 +93,59 @@ class Repository:
                 "approved": c.execute("SELECT COUNT(*) FROM drafts WHERE status='approved'").fetchone()[0],
             }
 
+    def daily_connection_count(self, on_date=None):
+        """Return connection requests manually recorded for a local calendar date."""
+        target_date = on_date or datetime.now().astimezone().date().isoformat()
+        with connect() as c:
+            return c.execute(
+                "SELECT COUNT(*) FROM connection_events WHERE date(sent_at)=?",
+                (target_date,),
+            ).fetchone()[0]
+
+    def record_connection_sent(self, prospect_id, daily_limit=30, sent_on=None):
+        """Record a request only after the user has manually sent it on LinkedIn."""
+        now = datetime.now().astimezone()
+        target_date = sent_on or now.date().isoformat()
+        sent_at = now.isoformat(timespec="seconds") if sent_on is None else f"{target_date}T12:00:00"
+        with connect() as c:
+            # Serialize the check-and-insert so parallel app sessions cannot exceed the cap.
+            c.execute("BEGIN IMMEDIATE")
+            prospect = c.execute(
+                "SELECT id, outreach_status FROM prospects WHERE id=?",
+                (prospect_id,),
+            ).fetchone()
+            if not prospect:
+                raise ValueError("Prospect not found.")
+            approved = c.execute(
+                "SELECT 1 FROM drafts WHERE prospect_id=? AND status='approved' LIMIT 1",
+                (prospect_id,),
+            ).fetchone()
+            if not approved:
+                raise ValueError("Approve a connection note before recording a sent request.")
+            if c.execute(
+                "SELECT 1 FROM connection_events WHERE prospect_id=?",
+                (prospect_id,),
+            ).fetchone():
+                raise ValueError("A connection request is already recorded for this prospect.")
+            sent_count = c.execute(
+                "SELECT COUNT(*) FROM connection_events WHERE date(sent_at)=?",
+                (target_date,),
+            ).fetchone()[0]
+            if sent_count >= daily_limit:
+                raise ValueError(f"Daily limit reached ({daily_limit} connection requests).")
+            c.execute(
+                "INSERT INTO connection_events(prospect_id,sent_at) VALUES(?,?)",
+                (prospect_id, sent_at),
+            )
+            c.execute(
+                "UPDATE prospects SET outreach_status='connection_sent' WHERE id=?",
+                (prospect_id,),
+            )
+            return sent_count + 1
+
     def update_prospect_status(self, prospect_id, status):
-        allowed = {"not_contacted", "drafted", "approved", "connection_sent", "connected", "replied", "archived"}
+        allowed = {"not_contacted", "drafted", "approved", "connected", "replied", "archived"}
         if status not in allowed:
-            raise ValueError("Invalid prospect outreach status")
+            raise ValueError("Invalid prospect outreach status; use the manual-send confirmation workflow.")
         with connect() as c:
             c.execute("UPDATE prospects SET outreach_status=? WHERE id=?", (status, prospect_id))
