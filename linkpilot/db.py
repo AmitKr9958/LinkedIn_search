@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS drafts (
  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status);
+CREATE TABLE IF NOT EXISTS connection_events (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ prospect_id INTEGER NOT NULL UNIQUE REFERENCES prospects(id) ON DELETE CASCADE,
+ sent_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_connection_events_sent_at ON connection_events(sent_at);
 """
 
 @contextmanager
