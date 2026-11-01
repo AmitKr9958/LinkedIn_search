@@ -9,6 +9,7 @@ from linkpilot.config import get_settings
 from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
 from linkpilot.scoring import relevance_score
 from linkpilot.discovery import build_public_search_url, build_company_search_url, build_search_query, ROLE_SEARCH_TERMS
+from linkpilot.public_search import search_public_professionals, PublicSearchError
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -56,29 +57,78 @@ elif page == "Discovery":
     st.subheader("Company discovery")
     st.caption("Find public job and careers pages for companies hiring in your target skill area.")
     company_keywords = st.text_input("Target skills / roles", "Power BI OR Business Intelligence OR Data Analyst")
-    target_location = st.text_input("Target location", "India")
+    target_location = st.text_input("Target location", "India", key="company_search_location")
     if company_keywords.strip():
         st.link_button("Search companies and job openings",
                        build_company_search_url(company_keywords, target_location))
 
     st.divider()
-    st.subheader("Public professional discovery")
-    st.caption("Build targeted public-web search links. Search results are reviewed by you; this app does not scrape LinkedIn or collect profile data automatically.")
+    st.subheader("Automated public professional discovery")
+    st.caption(
+        "Searches an external public-web index for publicly indexed LinkedIn profile URLs. "
+        "It does not sign in to LinkedIn or scrape profile pages."
+    )
+    saved_companies = repo.company_names()
+    with st.form("automated_discovery_form"):
+        if saved_companies:
+            target_company = st.selectbox("Target company", saved_companies)
+        else:
+            target_company = st.text_input("Target company", placeholder="e.g. Accenture")
+        prospect_location = st.text_input("Professional location", "India")
+        target_roles = st.multiselect(
+            "Find these professional roles",
+            list(ROLE_SEARCH_TERMS.keys()),
+            default=["Recruiter", "Talent Acquisition", "HR", "Hiring Manager"],
+        )
+        per_role = st.slider("Maximum profiles per role", min_value=1, max_value=10, value=5)
+        discover = st.form_submit_button("Find public profiles", type="primary")
+
+    if discover:
+        if not settings.exa_api_key:
+            st.error("Automated search needs an Exa API key. Add EXA_API_KEY=... to your .env file, save it, and restart Streamlit.")
+        elif not target_company.strip():
+            st.error("Enter or select a target company.")
+        elif not target_roles:
+            st.error("Select at least one professional role.")
+        else:
+            try:
+                with st.spinner("Searching public results and checking for duplicates..."):
+                    candidates = search_public_professionals(
+                        target_company, target_roles, prospect_location,
+                        settings.exa_api_key, max_results_per_role=per_role,
+                    )
+                    added = sum(1 for candidate in candidates if repo.add_prospect_if_new(candidate))
+                st.success(f"Found {len(candidates)} matching public profile result(s); added {added} new prospect(s); skipped {len(candidates) - added} duplicate(s).")
+                if candidates:
+                    st.dataframe(
+                        [{"Name (verify)": p["full_name"], "Title (verify)": p["title"],
+                          "Category": p["category"], "Profile": p["profile_url"]} for p in candidates],
+                        use_container_width=True, hide_index=True,
+                    )
+                    st.info("Search snippets can be incomplete or outdated. Verify each person's current employer and role before drafting or contacting them. New prospects are now available on the Prospects page.")
+                else:
+                    st.warning("No public LinkedIn profile results matched these filters. Try a different location, company spelling or role.")
+            except (PublicSearchError, ValueError) as exc:
+                st.error(str(exc))
+
+    if not settings.exa_api_key:
+        st.info("No EXA_API_KEY configured. You can still use the manual public-search links below; CSV import is not required.")
+    st.divider()
+    st.subheader("Manual public search links")
+    st.caption("Fallback search links if automated public search is not configured.")
     companies = repo.company_names()
-    company = st.selectbox("Target company", [""] + companies) if companies else st.text_input("Target company")
+    company = st.selectbox("Company for manual search", [""] + companies) if companies else st.text_input("Company for manual search")
     selected_roles = st.multiselect(
-        "Professional roles to find",
+        "Professional roles for manual search",
         list(ROLE_SEARCH_TERMS.keys()),
         default=["Recruiter", "Talent Acquisition", "HR", "Hiring Manager"],
+        key="manual_search_roles",
     )
     if company.strip() and selected_roles:
         search_url = build_public_search_url(company, selected_roles)
         for role in selected_roles:
             st.code(build_search_query(company, role))
         st.link_button("Open public web search", search_url)
-        st.info("Review results manually. Add only relevant professional information that is publicly available and permitted for your use.")
-    else:
-        st.info("Select or enter a company and at least one role.")
 
 elif page == "Prospects":
     st.subheader("Professional prospects")
@@ -185,6 +235,10 @@ elif page == "Settings":
     st.write("9Router base URL:", settings.llm_base_url)
     st.write("Model:", settings.llm_model or "Not configured")
     st.write("API key configured:", bool(settings.llm_api_key))
+    st.divider()
+    st.subheader("Public prospect discovery")
+    st.write("Exa search API configured:", bool(settings.exa_api_key))
+    st.caption("Set EXA_API_KEY in .env to search publicly indexed professional profile pages. CSV is optional.")
     st.write("Database:", settings.database_path)
     if st.button("Test 9Router connection"):
         try:
