@@ -60,3 +60,10 @@ class Repository:
                 "drafts": c.execute("SELECT COUNT(*) FROM drafts").fetchone()[0],
                 "approved": c.execute("SELECT COUNT(*) FROM drafts WHERE status='approved'").fetchone()[0],
             }
+
+    def update_prospect_status(self, prospect_id, status):
+        allowed = {"not_contacted", "drafted", "approved", "connection_sent", "connected", "replied", "archived"}
+        if status not in allowed:
+            raise ValueError("Invalid prospect outreach status")
+        with connect() as c:
+            c.execute("UPDATE prospects SET outreach_status=? WHERE id=?", (status, prospect_id))
