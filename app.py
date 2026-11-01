@@ -71,45 +71,62 @@ elif page == "Discovery":
     saved_companies = repo.company_names()
     with st.form("automated_discovery_form"):
         if saved_companies:
-            target_company = st.selectbox("Target company", saved_companies)
+            target_companies = st.multiselect(
+                "Target companies (select one or more)",
+                saved_companies,
+                default=saved_companies[:1],
+            )
         else:
-            target_company = st.text_input("Target company", placeholder="e.g. Accenture")
-        prospect_location = st.text_input("Professional location", "India")
+            typed_company = st.text_input("Target company", placeholder="e.g. Accenture")
+            target_companies = [typed_company.strip()] if typed_company.strip() else []
+        prospect_location = st.text_input("Professional location", "Delhi NCR")
         target_roles = st.multiselect(
             "Find these professional roles",
             list(ROLE_SEARCH_TERMS.keys()),
             default=["Recruiter", "Talent Acquisition", "HR", "Hiring Manager"],
         )
-        per_role = st.slider("Maximum profiles per role", min_value=1, max_value=10, value=5)
+        per_role = st.slider("Maximum profiles per role and company", min_value=1, max_value=5, value=3)
         discover = st.form_submit_button("Find public profiles", type="primary")
 
     if discover:
         if not settings.exa_api_key:
             st.error("Automated search needs an Exa API key. Add EXA_API_KEY=... to your .env file, save it, and restart Streamlit.")
-        elif not target_company.strip():
-            st.error("Enter or select a target company.")
+        elif not target_companies:
+            st.error("Enter or select at least one target company.")
         elif not target_roles:
             st.error("Select at least one professional role.")
         else:
             try:
-                with st.spinner("Searching public results and checking for duplicates..."):
-                    candidates = search_public_professionals(
-                        target_company, target_roles, prospect_location,
-                        settings.exa_api_key, max_results_per_role=per_role,
-                    )
-                    added = sum(1 for candidate in candidates if repo.add_prospect_if_new(candidate))
-                st.success(f"Found {len(candidates)} matching public profile result(s); added {added} new prospect(s); skipped {len(candidates) - added} duplicate(s).")
+                candidates = []
+                added = 0
+                failures = []
+                request_count = len(target_companies) * len(target_roles)
+                with st.spinner(f"Searching {len(target_companies)} company/company target(s) across {len(target_roles)} role(s) — up to {request_count} provider requests..."):
+                    for target_company in target_companies:
+                        try:
+                            company_results = search_public_professionals(
+                                target_company, target_roles, prospect_location,
+                                settings.exa_api_key, max_results_per_role=per_role,
+                            )
+                            candidates.extend(company_results)
+                            added += sum(1 for candidate in company_results if repo.add_prospect_if_new(candidate))
+                        except (PublicSearchError, ValueError) as exc:
+                            failures.append(f"{target_company}: {exc}")
+                st.success(f"Found {len(candidates)} result(s); added {added} new prospect(s); skipped {len(candidates) - added} duplicate(s).")
+                if failures:
+                    st.warning("Some company searches failed:\n" + "\n".join(failures))
                 if candidates:
                     st.dataframe(
-                        [{"Name (verify)": p["full_name"], "Title (verify)": p["title"],
-                          "Category": p["category"], "Profile": p["profile_url"]} for p in candidates],
+                        [{"Name (verify)": p["full_name"], "Target company": p["company"],
+                          "Title (verify)": p["title"], "Category": p["category"],
+                          "Profile": p["profile_url"]} for p in candidates],
                         use_container_width=True, hide_index=True,
                     )
                     st.info("Search snippets can be incomplete or outdated. Verify each person's current employer and role before drafting or contacting them. New prospects are now available on the Prospects page.")
                 else:
                     st.warning("No public LinkedIn profile results matched these filters. Try a different location, company spelling or role.")
-            except (PublicSearchError, ValueError) as exc:
-                st.error(str(exc))
+            except Exception as exc:
+                st.error(f"Discovery could not complete: {exc}")
 
     if not settings.exa_api_key:
         st.info("No EXA_API_KEY configured. You can still use the manual public-search links below; CSV import is not required.")
@@ -132,7 +149,7 @@ elif page == "Discovery":
 
 elif page == "Prospects":
     st.subheader("Professional prospects")
-    st.caption("You can import records from a CSV you are authorized to use. The app does not collect LinkedIn profile data itself.")
+    st.caption("No CSV is required. Discover public profiles automatically or add a professional manually.")
     with st.expander("Optional: import existing prospects from a CSV file"):
         st.caption("You do not need a CSV. Use the Discovery page to find public profiles automatically.")
         upload = st.file_uploader("Choose a prospects CSV", type=["csv"])
