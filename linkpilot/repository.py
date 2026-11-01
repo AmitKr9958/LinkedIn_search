@@ -68,7 +68,7 @@ class Repository:
 
     def list_drafts(self):
         with connect() as c:
-            rows = c.execute("""SELECT d.*,p.full_name,p.company,p.title,p.profile_url,p.source_url
+            rows = c.execute("""SELECT d.*,p.full_name,p.company,p.title,p.profile_url,p.source_url,p.outreach_status
                                 FROM drafts d JOIN prospects p ON p.id=d.prospect_id
                                 ORDER BY d.updated_at DESC,d.id DESC""")
             return [dict(r) for r in rows]
