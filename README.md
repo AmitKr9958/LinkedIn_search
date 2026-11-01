@@ -8,7 +8,9 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 ## Features
 - Company directory and hiring-focus notes.
 - Company hiring search-query builder for BI / Power BI / Data Analyst roles.
-- Public professional search-query builder for recruiter, TA, HR, hiring manager and leadership roles.
+- Automated public professional discovery through the Exa Search API for publicly indexed LinkedIn profile URLs, with manual review.
+- Duplicate detection based on normalized public profile URLs.
+- Manual public-web search links remain available as a fallback.
 - Manual prospect entry.
 - CSV prospect import with required-column validation and duplicate skipping.
 - CSV export.
@@ -30,6 +32,12 @@ Copy-Item .env.example .env
 streamlit run app.py
 ```
 Open http://localhost:8501.
+
+## Automated public prospect discovery
+
+CSV import is optional. To search for prospects automatically, create an Exa API key from [Exa](https://dashboard.exa.ai/api-keys) and add it to `.env` as `EXA_API_KEY=...`. Restart Streamlit, open **Discovery**, choose a company, location and professional roles, then click **Find public profiles**. The app stores matching public LinkedIn `/in/` profile URLs in the local prospect CRM and skips duplicate profile URLs. Search results can be incomplete or outdated, so verify each person's current employer and role before drafting or contacting them. Exa API availability, quotas and charges depend on the account; check its current pricing before use. If no Exa key is configured, manual public-search links still work and CSV is not required.
+
+The integration uses Exa's public search endpoint and filters results to LinkedIn profile URL paths. It does not log in to LinkedIn, scrape pages, collect private contact data, bypass access controls or send connection requests.
 
 ## 9Router
 Start 9Router and connect a provider/model available to your account. Put the exact OpenAI-compatible base URL, API key and model identifier displayed by your 9Router setup in `.env`. Never commit `.env`.
