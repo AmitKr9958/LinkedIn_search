@@ -37,7 +37,7 @@ def _is_linkedin_profile(url: str) -> bool:
     host = (parsed.hostname or "").lower()
     return (
         parsed.scheme in {"http", "https"}
-        and (host == "linkedin.com" or host.endswith(".linkedin.com"))
+        and host in {"linkedin.com", "www.linkedin.com"}
         and parsed.path.startswith("/in/")
         and len(parsed.path.strip("/").split("/")) == 2
     )
@@ -94,7 +94,7 @@ def search_public_professionals(
             "type": "auto",
             "numResults": limit,
             "includeDomains": ["linkedin.com"],
-            "contents": {"highlights": {"maxCharacters": 1200}},
+            "contents": {"highlights": True},
         }
         request = Request(
             EXA_SEARCH_URL,
