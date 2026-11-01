@@ -65,3 +65,16 @@ def test_unapproved_status_cannot_bypass_send_ledger(repo):
     prospect = repo.list_prospects()[0]
     with pytest.raises(ValueError, match="manual-send confirmation"):
         repo.update_prospect_status(prospect["id"], "connection_sent")
+
+
+
+def test_daily_count_uses_local_calendar_date_for_offset_timestamps(repo):
+    prospect_id = add_approved_prospect(repo, "Morgan")
+    target_date = "2026-11-01"
+    with db.connect() as connection:
+        connection.execute(
+            "INSERT INTO connection_events(prospect_id, sent_at) VALUES(?, ?)",
+            (prospect_id, f"{target_date}T00:15:00+05:30"),
+        )
+
+    assert repo.daily_connection_count(target_date) == 1
