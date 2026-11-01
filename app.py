@@ -169,6 +169,15 @@ elif page == "Settings":
     st.write("Model:", settings.llm_model or "Not configured")
     st.write("API key configured:", bool(settings.llm_api_key))
     st.write("Database:", settings.database_path)
+    if st.button("Test 9Router connection"):
+        try:
+            with st.spinner("Checking 9Router..."):
+                available_models = DraftService().test_connection()
+            st.success(f"Connected. {len(available_models)} model(s) are visible.")
+            if available_models:
+                st.code("\\n".join(available_models[:30]))
+        except Exception as exc:
+            st.error(f"Connection test failed: {exc}")
     st.info("Keep secrets in .env. Never commit API keys.")
     st.markdown("[9Router documentation](https://docs.9router.com/)")
     st.markdown("[LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement)")
