@@ -29,5 +29,5 @@ def build_company_search_url(role_keywords: str, location: str) -> str:
     if not role_keywords.strip():
         raise ValueError("Enter at least one role or skill keyword.")
     location_part = f' "{location.strip()}"' if location.strip() else ""
-    query = f'companies hiring "{role_keywords.strip()}"{location_part} (jobs OR careers OR hiring)'
+    query = f'companies hiring ({role_keywords.strip()}){location_part} (jobs OR careers OR hiring)'
     return "https://www.google.com/search?q=" + quote_plus(query)
