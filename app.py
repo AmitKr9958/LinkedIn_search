@@ -26,10 +26,15 @@ with st.sidebar:
 
 if page == "Overview":
     stats = repo.stats()
-    cols = st.columns(4)
-    for col, label, key in zip(cols, ["Companies", "Prospects", "Drafts", "Approved"],
-                               ["companies", "prospects", "drafts", "approved"]):
-        col.metric(label, stats[key])
+    sent_today = repo.daily_connection_count()
+    cols = st.columns(6)
+    metrics = [
+        ("Companies", stats["companies"]), ("Prospects", stats["prospects"]),
+        ("Drafts", stats["drafts"]), ("Approved", stats["approved"]),
+        ("Sent today", sent_today), ("Daily remaining", max(0, 30 - sent_today)),
+    ]
+    for col, (label, value) in zip(cols, metrics):
+        col.metric(label, value)
     st.subheader("Getting started")
     st.markdown("1. Add companies.\n2. Add professionals using permitted sources.\n3. Generate a 9Router draft.\n4. Review and approve.\n5. Open the profile and send manually if appropriate.")
     st.warning("Metrics reflect this local database only.")
@@ -211,7 +216,7 @@ elif page == "Prospects":
         options = {f"{p['full_name']} — {p['title']} at {p['company']} (#{p['id']})": p["id"] for p in prospects}
         chosen = st.selectbox("Choose a prospect", list(options))
         prospect = repo.get_prospect(options[chosen])
-        status_options = ["not_contacted", "drafted", "approved", "connection_sent", "connected", "replied", "archived"]
+        status_options = ["not_contacted", "drafted", "approved", "connected", "replied", "archived"]
         current_status = prospect.get("outreach_status", "not_contacted")
         new_status = st.selectbox("Outreach status", status_options,
                                   index=status_options.index(current_status) if current_status in status_options else 0)
@@ -233,7 +238,13 @@ elif page == "Prospects":
             st.success("Draft saved.")
 
 elif page == "Approval queue":
-    st.subheader("Review and approve drafts")
+    st.subheader("Review, approve and track connection requests")
+    sent_today = repo.daily_connection_count()
+    remaining = max(0, 30 - sent_today)
+    meter_left, meter_right = st.columns(2)
+    meter_left.metric("Requests recorded today", f"{sent_today} / 30")
+    meter_right.metric("Remaining today", remaining)
+    st.caption("The counter records requests only after you have sent them yourself on LinkedIn. It does not send invitations.")
     drafts = repo.list_drafts()
     if not drafts:
         st.info("No drafts yet.")
@@ -251,8 +262,31 @@ elif page == "Approval queue":
                     repo.update_draft(item["id"], note, "approved")
                     st.success("Approved. This does not send a LinkedIn request.")
             else:
-                st.success("Approved — not sent.")
-            if item["profile_url"]:
+                st.success("Approved note — ready for your manual LinkedIn action.")
+                if item.get("outreach_status") == "connection_sent":
+                    st.success("Request already recorded as sent.")
+                else:
+                    if item["profile_url"]:
+                        st.link_button("Open LinkedIn profile", item["profile_url"])
+                    else:
+                        st.warning("No profile URL is saved for this prospect.")
+                    confirmed = st.checkbox(
+                        "I have sent this connection request manually on LinkedIn",
+                        key=f"sent_confirm_{item['id']}",
+                    )
+                    if st.button(
+                        "Record as sent",
+                        key=f"record_sent_{item['id']}",
+                        type="primary",
+                        disabled=(remaining <= 0 or not confirmed),
+                    ):
+                        try:
+                            total = repo.record_connection_sent(item["prospect_id"], daily_limit=30)
+                            st.success(f"Recorded. {total} of 30 requests counted today.")
+                            st.rerun()
+                        except ValueError as exc:
+                            st.error(str(exc))
+            if item["profile_url"] and item["status"] != "approved":
                 st.link_button("Open profile for manual review", item["profile_url"])
 
 elif page == "Settings":
