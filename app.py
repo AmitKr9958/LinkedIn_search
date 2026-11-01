@@ -104,6 +104,12 @@ elif page == "Discovery":
                 with st.spinner(f"Searching {len(target_companies)} company/company target(s) across {len(target_roles)} role(s) — up to {request_count} provider requests..."):
                     for target_company in target_companies:
                         try:
+                            if target_company.casefold() not in {name.casefold() for name in saved_companies}:
+                                repo.add_company(
+                                    target_company,
+                                    hiring_focus="Added from automated public prospect discovery",
+                                )
+                                saved_companies.append(target_company)
                             company_results = search_public_professionals(
                                 target_company, target_roles, prospect_location,
                                 settings.exa_api_key, max_results_per_role=per_role,
