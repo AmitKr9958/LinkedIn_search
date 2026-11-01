@@ -23,11 +23,15 @@ def test_company_prospect_draft_and_approval(tmp_path, monkeypatch):
     repo.add_prospect("Taylor Recruiter", "Acme", "Talent Acquisition Manager",
                       "Talent Acquisition", "https://example.org/profile", "", "Supports analytics hiring")
     prospect = repo.list_prospects()[0]
+    assert prospect["outreach_status"] == "not_contacted"
+    repo.update_prospect_status(prospect["id"], "connection_sent")
+    assert repo.get_prospect(prospect["id"])["outreach_status"] == "connection_sent"
     repo.save_draft(prospect["id"], "Hello Taylor, I would be glad to connect.")
     draft = repo.list_drafts()[0]
     assert draft["status"] == "draft"
     repo.update_draft(draft["id"], "Revised note", "approved")
     assert repo.list_drafts()[0]["status"] == "approved"
+    assert repo.get_prospect(prospect["id"])["outreach_status"] == "approved"
 
 def test_invalid_status_rejected():
     repo = Repository()
