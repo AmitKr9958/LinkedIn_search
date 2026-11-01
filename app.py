@@ -8,7 +8,7 @@ from linkpilot.ai import DraftService
 from linkpilot.config import get_settings
 from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
 from linkpilot.scoring import relevance_score
-from linkpilot.discovery import build_public_search_url, build_search_query, ROLE_SEARCH_TERMS
+from linkpilot.discovery import build_public_search_url, build_company_search_url, build_search_query, ROLE_SEARCH_TERMS
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -53,6 +53,15 @@ elif page == "Companies":
     st.dataframe(repo.list_companies(), use_container_width=True, hide_index=True)
 
 elif page == "Discovery":
+    st.subheader("Company discovery")
+    st.caption("Find public job and careers pages for companies hiring in your target skill area.")
+    company_keywords = st.text_input("Target skills / roles", "Power BI OR Business Intelligence OR Data Analyst")
+    target_location = st.text_input("Target location", "India")
+    if company_keywords.strip():
+        st.link_button("Search companies and job openings",
+                       build_company_search_url(company_keywords, target_location))
+
+    st.divider()
     st.subheader("Public professional discovery")
     st.caption("Build targeted public-web search links. Search results are reviewed by you; this app does not scrape LinkedIn or collect profile data automatically.")
     companies = repo.company_names()
