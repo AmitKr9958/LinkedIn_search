@@ -40,7 +40,7 @@ def export_prospects_csv(rows):
         safe_row = {}
         for field in fields:
             value = str(row.get(field, "") or "")
-            if value.startswith(("=", "+", "-", "@", "\\t", "\\r")):
+            if value.startswith(("=", "+", "-", "@")) or (value and ord(value[0]) in (9, 13)):
                 value = "'" + value
             safe_row[field] = value
         writer.writerow(safe_row)
