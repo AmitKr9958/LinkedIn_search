@@ -67,7 +67,7 @@ def main() -> int:
                 "Company=%s found=%d added=%d duplicates=%d",
                 company, len(candidates), added, len(candidates) - added,
             )
-        except (PublicSearchError, ValueError) as exc:
+        except Exception as exc:
             failures += 1
             logging.exception("Discovery failed for company=%s: %s", company, exc)
 
