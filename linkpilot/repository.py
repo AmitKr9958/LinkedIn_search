@@ -128,7 +128,7 @@ class Repository:
             ).fetchone():
                 raise ValueError("A connection request is already recorded for this prospect.")
             sent_count = c.execute(
-                "SELECT COUNT(*) FROM connection_events WHERE date(sent_at)=?",
+                "SELECT COUNT(*) FROM connection_events WHERE substr(sent_at,1,10)=?",
                 (target_date,),
             ).fetchone()[0]
             if sent_count >= daily_limit:
