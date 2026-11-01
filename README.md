@@ -14,6 +14,8 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 - Heuristic role relevance scoring.
 - 9Router-compatible personalized message drafting.
 - Editable draft and explicit approval queue.
+- Manual outreach lifecycle tracking: not contacted, drafted, approved, connection sent, connected, replied and archived.
+- CSV export with spreadsheet-formula injection protection.
 - Local SQLite persistence.
 - GitHub Actions test workflow.
 
@@ -40,7 +42,7 @@ SQLite is used locally by default at `data/linkpilot.db`. No hosted database is 
 3. Add prospects manually or import a CSV from permitted sources.
 4. Generate, edit and approve a role-specific note.
 5. Open the profile and decide/send manually on LinkedIn.
-6. Track the outcome in your CRM.
+6. Update the prospect status manually (connection sent, connected, replied, etc.) in the CRM.
 
 ## Tests
 Run `pytest -q`.
