@@ -19,6 +19,7 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 - Heuristic role relevance scoring.
 - 9Router-compatible personalized message drafting.
 - Editable draft and explicit approval queue.
+- Manual-send confirmation workflow with a hard 30-request daily recording cap, approval requirement, duplicate-send prevention and a local activity ledger.
 - Manual outreach lifecycle tracking: not contacted, drafted, approved, connection sent, connected, replied and archived.
 - CSV export with spreadsheet-formula injection protection.
 - Local SQLite persistence.
@@ -81,14 +82,15 @@ SQLite is used locally by default at `data/linkpilot.db`. No hosted database is 
 2. Use Discovery to find companies with relevant openings, then build public-web searches for decision-makers and manually review results.
 3. Add prospects manually or import a CSV from permitted sources.
 4. Generate, edit and approve a role-specific note.
-5. Open the profile and decide/send manually on LinkedIn.
-6. Update the prospect status manually (connection sent, connected, replied, etc.) in the CRM.
+5. Open the approved profile, review the final note, and send the connection request yourself on LinkedIn.
+6. Return to the Approval queue, tick the confirmation that you sent it, and choose **Record as sent**. The app enforces a maximum of 30 recorded sends per local calendar day and prevents duplicate records for the same prospect.
+7. Update later statuses (connected, replied or archived) in the Prospects page.
 
 ## Tests
 Run `pytest -q`.
 
 ## Important
-An approved note is not a sent connection request. Sending remains a manual action. Do not put API keys, passwords, sensitive personal data or private contact details into the research notes.
+An approved note is not a sent connection request. Sending remains a manual action. The 30/day cap applies to requests recorded in this local CRM; it cannot observe or limit invitations sent outside the app or on another device. Do not put API keys, passwords, sensitive personal data or private contact details into the research notes.
 
 ## Roadmap
 More complete prospect lifecycle tracking, configurable relevance rules, compliant research-provider adapters, follow-up reminders, analytics, security hardening and optional Supabase persistence.
