@@ -40,7 +40,7 @@ def export_prospects_csv(rows):
         safe_row = {}
         for field in fields:
             value = str(row.get(field, "") or "")
-            trimmed = value.lstrip(" \\t\\r\\n")
+            trimmed = value.lstrip(" \t\r\n")
             if trimmed.startswith(("=", "+", "-", "@")):
                 value = "'" + value
             safe_row[field] = value
