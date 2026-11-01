@@ -35,6 +35,11 @@ def test_public_search_returns_only_linkedin_profile_urls_and_deduplicates(monke
                     "highlights": ["Not a person profile."],
                 },
                 {
+                    "title": "Lookalike domain",
+                    "url": "https://linkedin.com.attacker.example/in/fake-person",
+                    "highlights": ["Not a LinkedIn domain."],
+                },
+                {
                     "title": "External profile",
                     "url": "https://example.com/person",
                     "highlights": ["Not LinkedIn."],
