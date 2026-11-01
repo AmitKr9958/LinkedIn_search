@@ -7,6 +7,7 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 
 ## Features
 - Company directory and hiring-focus notes.
+- Company hiring search-query builder for BI / Power BI / Data Analyst roles.
 - Public professional search-query builder for recruiter, TA, HR, hiring manager and leadership roles.
 - Manual prospect entry.
 - CSV prospect import with required-column validation and duplicate skipping.
@@ -38,7 +39,7 @@ SQLite is used locally by default at `data/linkpilot.db`. No hosted database is 
 
 ## Workflow
 1. Add target companies.
-2. Use Discovery to create a public-web search link and manually review results.
+2. Use Discovery to find companies with relevant openings, then build public-web searches for decision-makers and manually review results.
 3. Add prospects manually or import a CSV from permitted sources.
 4. Generate, edit and approve a role-specific note.
 5. Open the profile and decide/send manually on LinkedIn.
