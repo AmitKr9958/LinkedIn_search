@@ -6,7 +6,7 @@ APP_PATH = Path(__file__).resolve().parents[1] / "app.py"
 
 @pytest.mark.parametrize(
     "page",
-    ["Overview", "Companies", "Discovery", "Prospects", "Approval queue", "Settings"],
+    ["Overview", "Companies", "Jobs", "Discovery", "Prospects", "Approval queue", "Settings"],
 )
 def test_streamlit_page_renders_without_exception(tmp_path, monkeypatch, page):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "app-test.db"))
