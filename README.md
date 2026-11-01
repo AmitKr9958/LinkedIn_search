@@ -8,7 +8,7 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 ## Features
 - Company directory and hiring-focus notes.
 - Company hiring search-query builder for BI / Power BI / Data Analyst roles.
-- Keyless India job discovery through the freehire public job-search API, with Delhi NCR filtering and company saving.
+- Keyless India job discovery through the freehire public job-search API, with title-only search, location, experience and recency filters, and company saving.
 - Automated public professional discovery through the Exa Search API for publicly indexed LinkedIn profile URLs, with manual review.
 - Duplicate detection based on normalized public profile URLs.
 - Batch discovery across all companies saved in the local directory.
@@ -39,7 +39,7 @@ Open http://localhost:8501.
 
 ## Free job discovery (no API key)
 
-Open **Jobs** in the Streamlit sidebar to search India postings for Power BI, Business Intelligence, Data Analyst, Microsoft Fabric and Reporting Analyst keywords. The integration uses freehire `GET /api/v1/jobs/search`, filters to India (`countries=IN`), and applies the selected city/Delhi NCR filter to the returned page. You can save companies from matching postings into the local company directory, then use manual public-search links in **Discovery** to research relevant professionals. Each listing links back to its original job posting. Results are hiring signals, not verified recruiter or employee contact data.
+Open **Jobs** in the Streamlit sidebar to search India postings for Power BI, Business Intelligence, Data Analyst, Microsoft Fabric and Reporting Analyst keywords. The integration uses freehire `GET /api/v1/jobs/search`, restricts keyword matching to job titles, applies server-side city/country, experience and source-posted-date filters, and applies a defensive local location check. Defaults are Delhi NCR, 5–8 years and the last 2 source-posted days; postings with unstated experience are also retained and must be checked manually. Jaipur is available as a separate location. You can save companies from matching postings into the local company directory, then use manual public-search links in **Discovery** to research relevant professionals. Each listing links back to its original job posting. Results are hiring signals, not verified recruiter or employee contact data.
 
 The freehire documentation currently describes unauthenticated public reads as intended for personal, non-commercial use, with per-address rate limits. Check its [API documentation](https://freehire.me/docs/api) and [data licence](https://freehire.me/docs/data-licence) before using it in a hosted or commercial product. The public-apis repository is a catalogue of third-party APIs, not an API server itself. See its [Jobs category](https://github.com/public-apis/public-apis#jobs).
 
