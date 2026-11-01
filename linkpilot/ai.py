@@ -10,6 +10,11 @@ class DraftService:
                              timeout=45.0, max_retries=1)
         self.model = cfg.llm_model
 
+    def test_connection(self):
+        """Check whether the configured 9Router endpoint exposes its model catalogue."""
+        models = self.client.models.list()
+        return [item.id for item in models.data]
+
     def generate(self, prospect: dict) -> str:
         system = (
             "Write concise, truthful professional networking notes. Never invent shared history, "
