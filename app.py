@@ -8,7 +8,7 @@ from linkpilot.ai import DraftService
 from linkpilot.config import get_settings
 from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
 from linkpilot.scoring import relevance_score
-from linkpilot.discovery import build_public_search_url, ROLE_SEARCH_TERMS
+from linkpilot.discovery import build_public_search_url, build_search_query, ROLE_SEARCH_TERMS
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -64,7 +64,8 @@ elif page == "Discovery":
     )
     if company.strip() and selected_roles:
         search_url = build_public_search_url(company, selected_roles)
-        st.code(f'site:linkedin.com/in/ "{company}" (role keywords)')
+        for role in selected_roles:
+            st.code(build_search_query(company, role))
         st.link_button("Open public web search", search_url)
         st.info("Review results manually. Add only relevant professional information that is publicly available and permitted for your use.")
     else:
