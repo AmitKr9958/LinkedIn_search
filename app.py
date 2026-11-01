@@ -133,24 +133,26 @@ elif page == "Discovery":
 elif page == "Prospects":
     st.subheader("Professional prospects")
     st.caption("You can import records from a CSV you are authorized to use. The app does not collect LinkedIn profile data itself.")
-    upload = st.file_uploader("Import prospects CSV", type=["csv"])
-    if upload is not None and st.button("Import CSV prospects"):
-        try:
-            imported = parse_prospect_csv(upload.getvalue())
-            existing = {(p["full_name"].casefold(), p["company"].casefold()) for p in repo.list_prospects()}
-            added = 0
-            skipped = 0
-            for row in imported:
-                key = (row["full_name"].casefold(), row["company"].casefold())
-                if key in existing:
-                    skipped += 1
-                    continue
-                repo.add_prospect(**row)
-                existing.add(key)
-                added += 1
-            st.success(f"Imported {added} prospects; skipped {skipped} duplicates.")
-        except Exception as exc:
-            st.error(f"CSV import failed: {exc}")
+    with st.expander("Optional: import existing prospects from a CSV file"):
+        st.caption("You do not need a CSV. Use the Discovery page to find public profiles automatically.")
+        upload = st.file_uploader("Choose a prospects CSV", type=["csv"])
+        if upload is not None and st.button("Import CSV prospects"):
+            try:
+                imported = parse_prospect_csv(upload.getvalue())
+                existing = {(p["full_name"].casefold(), p["company"].casefold()) for p in repo.list_prospects()}
+                added = 0
+                skipped = 0
+                for row in imported:
+                    key = (row["full_name"].casefold(), row["company"].casefold())
+                    if key in existing:
+                        skipped += 1
+                        continue
+                    repo.add_prospect(**row)
+                    existing.add(key)
+                    added += 1
+                st.success(f"Imported {added} prospects; skipped {skipped} duplicates.")
+            except Exception as exc:
+                st.error(f"CSV import failed: {exc}")
 
     companies = repo.company_names()
     with st.form("prospect_form", clear_on_submit=True):
