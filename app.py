@@ -64,11 +64,12 @@ elif page == "Jobs":
     st.subheader("Free job discovery — India")
     st.caption(
         "Uses freehire's public, no-key job-search API. Search results are hiring signals, "
-        "not verified recruiter/contact records."
+        "not verified recruiter/contact records. Keyword matching is restricted to job titles."
     )
     st.info(
-        "No API key is needed. The unauthenticated freehire endpoint is documented for "
-        "personal, non-commercial use and is rate-limited. Link back to original job posts."
+        "No API key is needed for personal, non-commercial use. The search applies location, "
+        "experience and posting-date filters at the API where supported. Unspecified experience "
+        "may still be included; verify each vacancy before applying."
     )
     job_query = st.text_input(
         "Job keywords",
@@ -79,16 +80,32 @@ elif page == "Jobs":
         ["Delhi NCR", "India", "Gurugram", "Noida", "Delhi", "Jaipur"],
         index=0,
     )
+    filter_col1, filter_col2 = st.columns(2)
+    with filter_col1:
+        min_experience = st.selectbox("Minimum experience (years)", [None, 0, 2, 3, 5, 6, 8, 10], index=4,
+                                      format_func=lambda value: "Any / include unspecified" if value is None else str(value))
+    with filter_col2:
+        max_experience = st.selectbox("Maximum experience (years)", [None, 3, 5, 6, 8, 10, 12, 15], index=4,
+                                      format_func=lambda value: "Any / include unspecified" if value is None else str(value))
+    posted_days = st.selectbox("Posted within", [1, 2, 3, 7, 14, 30, None], index=1,
+                               format_func=lambda value: "Any date" if value is None else f"Last {value} day(s)")
     job_limit = st.slider("Maximum jobs to retrieve", min_value=10, max_value=100, value=50, step=10)
     if st.button("Search free job listings", type="primary"):
         try:
             with st.spinner("Searching freehire public job listings..."):
-                jobs = search_india_jobs(job_query, limit=job_limit)
+                jobs = search_india_jobs(
+                    job_query,
+                    limit=job_limit,
+                    location=job_location,
+                    min_experience=min_experience,
+                    max_experience=max_experience,
+                    posted_within_days=posted_days,
+                )
                 filtered_jobs = filter_jobs_by_location(jobs, job_location)
             st.session_state["freehire_jobs"] = filtered_jobs
             st.session_state["freehire_location"] = job_location
             st.success(
-                f"Received {len(jobs)} India listing(s); "
+                f"Received {len(jobs)} listing(s); "
                 f"{len(filtered_jobs)} match the {job_location} filter."
             )
         except (FreeJobsError, ValueError) as exc:
@@ -104,7 +121,8 @@ elif page == "Jobs":
                 "Location": job.get("location", ""),
                 "Posted": job.get("posted_at", ""),
                 "Experience (min)": (job.get("enrichment") or {}).get("experience_years_min", ""),
-                "Apply link": job.get("url", ""),
+                "Experience (max)": (job.get("enrichment") or {}).get("experience_years_max", ""),
+                "Apply link": job.get("apply_url") or job.get("url", ""),
                 "Source": job.get("source", ""),
             })
         st.dataframe(rows, use_container_width=True, hide_index=True)
