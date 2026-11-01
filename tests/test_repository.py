@@ -37,3 +37,32 @@ def test_invalid_status_rejected():
     repo = Repository()
     with pytest.raises(ValueError):
         repo.update_draft(1, "x", "sent")
+
+def test_discovered_profile_url_is_deduplicated(tmp_path, monkeypatch):
+    import sqlite3
+    from pathlib import Path
+    import linkpilot.db as db
+    import linkpilot.repository as repository_module
+
+    def test_connect():
+        conn = sqlite3.connect(Path(tmp_path) / "dedupe.db")
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        return conn
+
+    monkeypatch.setattr(db, "connect", test_connect)
+    monkeypatch.setattr(repository_module, "connect", test_connect)
+    init_db()
+    repo = Repository()
+    prospect = {
+        "full_name": "Alex Example",
+        "company": "Acme",
+        "title": "Recruiter",
+        "category": "Recruiter",
+        "profile_url": "https://www.linkedin.com/in/alex-example",
+        "source_url": "https://www.linkedin.com/in/alex-example",
+        "research_notes": "Public result",
+    }
+    assert repo.add_prospect_if_new(prospect) is True
+    assert repo.add_prospect_if_new(prospect) is False
+    assert len(repo.list_prospects()) == 1
