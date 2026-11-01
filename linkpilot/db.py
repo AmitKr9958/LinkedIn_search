@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS prospects (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  full_name TEXT NOT NULL, company TEXT NOT NULL, title TEXT NOT NULL,
  category TEXT NOT NULL, profile_url TEXT, source_url TEXT, research_notes TEXT,
+ outreach_status TEXT NOT NULL DEFAULT 'not_contacted',
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_prospects_company ON prospects(company);
@@ -47,3 +48,8 @@ def connect():
 def init_db():
     with connect() as conn:
         conn.executescript(SCHEMA)
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(prospects)")}
+        if "outreach_status" not in columns:
+            conn.execute(
+                "ALTER TABLE prospects ADD COLUMN outreach_status TEXT NOT NULL DEFAULT 'not_contacted'"
+            )
