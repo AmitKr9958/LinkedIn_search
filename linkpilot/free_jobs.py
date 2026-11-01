@@ -35,6 +35,14 @@ def search_india_jobs(
         raise ValueError("A job search query is required.")
     if not 1 <= limit <= 100:
         raise ValueError("Limit must be between 1 and 100.")
+    if min_experience is not None and min_experience < 0:
+        raise ValueError("Minimum experience cannot be negative.")
+    if max_experience is not None and max_experience < 0:
+        raise ValueError("Maximum experience cannot be negative.")
+    if min_experience is not None and max_experience is not None and min_experience > max_experience:
+        raise ValueError("Minimum experience cannot exceed maximum experience.")
+    if posted_within_days is not None and posted_within_days < 1:
+        raise ValueError("Posted-within days must be at least 1.")
 
     # Restrict matching to titles: searching descriptions was returning unrelated
     # jobs that only mentioned Power BI somewhere in their text.
@@ -100,6 +108,13 @@ def search_india_jobs(
     if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
         message = payload.get("error", "Unexpected response format") if isinstance(payload, dict) else "Unexpected response format"
         raise FreeJobsError(f"freehire response error: {message}")
+
+    metadata = payload.get("meta") or {}
+    ignored = metadata.get("ignored_params") or []
+    if ignored:
+        raise FreeJobsError(
+            "freehire ignored requested filters: " + ", ".join(str(item) for item in ignored)
+        )
 
     return [job for job in payload["data"] if isinstance(job, dict)]
 
