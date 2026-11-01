@@ -5,3 +5,6 @@ __pycache__/
 *.py[cod]
 data/
 .streamlit/secrets.toml
+
+logs/
+*.log

@@ -8,13 +8,19 @@ This app does not log in to LinkedIn, scrape LinkedIn pages, automate LinkedIn b
 ## Features
 - Company directory and hiring-focus notes.
 - Company hiring search-query builder for BI / Power BI / Data Analyst roles.
-- Public professional search-query builder for recruiter, TA, HR, hiring manager and leadership roles.
+- Keyless India job discovery through the freehire public job-search API, with title-only search, location, experience and recency filters, and company saving.
+- Automated public professional discovery through the Exa Search API for publicly indexed LinkedIn profile URLs, with manual review.
+- Duplicate detection based on normalized public profile URLs.
+- Batch discovery across all companies saved in the local directory.
+- Optional Windows Task Scheduler job for daily public-profile discovery, with local logs.
+- Manual public-web search links remain available as a fallback.
 - Manual prospect entry.
 - CSV prospect import with required-column validation and duplicate skipping.
 - CSV export.
 - Heuristic role relevance scoring.
 - 9Router-compatible personalized message drafting.
 - Editable draft and explicit approval queue.
+- Manual-send confirmation workflow with a hard 30-request daily recording cap, approval requirement, duplicate-send prevention and a local activity ledger.
 - Manual outreach lifecycle tracking: not contacted, drafted, approved, connection sent, connected, replied and archived.
 - CSV export with spreadsheet-formula injection protection.
 - Local SQLite persistence.
@@ -31,6 +37,47 @@ streamlit run app.py
 ```
 Open http://localhost:8501.
 
+## Free job discovery (no API key)
+
+Open **Jobs** in the Streamlit sidebar to search India postings for Power BI, Business Intelligence, Data Analyst, Microsoft Fabric and Reporting Analyst keywords. The integration uses freehire `GET /api/v1/jobs/search`, restricts keyword matching to job titles, applies server-side city/country, experience and source-posted-date filters, and applies a defensive local location check. Defaults are Delhi NCR, 5–8 years and the last 2 source-posted days; postings with unstated experience are also retained and must be checked manually. Jaipur is available as a separate location. You can save companies from matching postings into the local company directory, then use manual public-search links in **Discovery** to research relevant professionals. Each listing links back to its original job posting. Results are hiring signals, not verified recruiter or employee contact data.
+
+The freehire documentation currently describes unauthenticated public reads as intended for personal, non-commercial use, with per-address rate limits. Check its [API documentation](https://freehire.me/docs/api) and [data licence](https://freehire.me/docs/data-licence) before using it in a hosted or commercial product. The public-apis repository is a catalogue of third-party APIs, not an API server itself. See its [Jobs category](https://github.com/public-apis/public-apis#jobs).
+
+## Automated public prospect discovery
+
+CSV import is optional. To search for prospects automatically, create an Exa API key from [Exa](https://dashboard.exa.ai/api-keys) and add it to `.env` as `EXA_API_KEY=...`. Restart Streamlit, open **Discovery**, choose a company, location and professional roles, then click **Find public profiles**. The app stores matching public LinkedIn `/in/` profile URLs in the local prospect CRM and skips duplicate profile URLs. Search results can be incomplete or outdated, so verify each person's current employer and role before drafting or contacting them. Exa API availability, quotas and charges depend on the account; check its current pricing before use. If no Exa key is configured, manual public-search links still work and CSV is not required.
+
+The integration uses Exa's public search endpoint and filters results to LinkedIn profile URL paths. It does not log in to LinkedIn, scrape pages, collect private contact data, bypass access controls or send connection requests. Searches are one request per selected role and company, so broad searches can use more of your provider quota. Start with a small number of companies and roles.
+
+## Optional daily discovery on Windows
+
+After adding companies in the app and configuring `EXA_API_KEY` in `.env`, you can run discovery for every saved company:
+
+```powershell
+python -m linkpilot.batch_discovery --location "Delhi NCR"
+```
+
+To schedule it daily at 9:00 AM, run this once from PowerShell in the repository:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\install_daily_discovery.ps1
+```
+
+The task runs as your Windows user while you are logged in and the computer is awake. It does not run while the laptop is shut down. Logs are written to `logs/daily-discovery.log`. To start it manually after installation:
+
+```powershell
+Start-ScheduledTask -TaskName "LinkPilot Daily Public Discovery"
+```
+
+Remove the scheduled task with:
+
+```powershell
+Unregister-ScheduledTask -TaskName "LinkPilot Daily Public Discovery" -Confirm:$false
+```
+
+The task searches the companies already saved in the app; it does not invent or automatically add target companies.
+
 ## 9Router
 Start 9Router and connect a provider/model available to your account. Put the exact OpenAI-compatible base URL, API key and model identifier displayed by your 9Router setup in `.env`. Never commit `.env`.
 
@@ -42,14 +89,15 @@ SQLite is used locally by default at `data/linkpilot.db`. No hosted database is 
 2. Use Discovery to find companies with relevant openings, then build public-web searches for decision-makers and manually review results.
 3. Add prospects manually or import a CSV from permitted sources.
 4. Generate, edit and approve a role-specific note.
-5. Open the profile and decide/send manually on LinkedIn.
-6. Update the prospect status manually (connection sent, connected, replied, etc.) in the CRM.
+5. Open the approved profile, review the final note, and send the connection request yourself on LinkedIn.
+6. Return to the Approval queue, tick the confirmation that you sent it, and choose **Record as sent**. The app enforces a maximum of 30 recorded sends per local calendar day and prevents duplicate records for the same prospect.
+7. Update later statuses (connected, replied or archived) in the Prospects page.
 
 ## Tests
 Run `pytest -q`.
 
 ## Important
-An approved note is not a sent connection request. Sending remains a manual action. Do not put API keys, passwords, sensitive personal data or private contact details into the research notes.
+An approved note is not a sent connection request. Sending remains a manual action. The 30/day cap applies to requests recorded in this local CRM; it cannot observe or limit invitations sent outside the app or on another device. Do not put API keys, passwords, sensitive personal data or private contact details into the research notes.
 
 ## Roadmap
 More complete prospect lifecycle tracking, configurable relevance rules, compliant research-provider adapters, follow-up reminders, analytics, security hardening and optional Supabase persistence.
