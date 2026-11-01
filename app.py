@@ -8,6 +8,7 @@ from linkpilot.ai import DraftService
 from linkpilot.config import get_settings
 from linkpilot.csv_tools import parse_prospect_csv, export_prospects_csv
 from linkpilot.scoring import relevance_score
+from linkpilot.discovery import build_public_search_url, ROLE_SEARCH_TERMS
 
 st.set_page_config(page_title="LinkPilot AI", page_icon="🤝", layout="wide")
 init_db()
@@ -18,7 +19,7 @@ st.title("🤝 LinkPilot AI")
 st.caption("Professional networking research and personalized outreach — with your approval.")
 with st.sidebar:
     st.header("Workspace")
-    page = st.radio("Navigate", ["Overview", "Companies", "Prospects", "Approval queue", "Settings"])
+    page = st.radio("Navigate", ["Overview", "Companies", "Discovery", "Prospects", "Approval queue", "Settings"])
     st.divider()
     st.info("Human approval required. No LinkedIn login, scraping, browser automation or automatic sending.")
 
@@ -50,6 +51,24 @@ elif page == "Companies":
                 except Exception as exc:
                     st.error(f"Could not save company: {exc}")
     st.dataframe(repo.list_companies(), use_container_width=True, hide_index=True)
+
+elif page == "Discovery":
+    st.subheader("Public professional discovery")
+    st.caption("Build targeted public-web search links. Search results are reviewed by you; this app does not scrape LinkedIn or collect profile data automatically.")
+    companies = repo.company_names()
+    company = st.selectbox("Target company", [""] + companies) if companies else st.text_input("Target company")
+    selected_roles = st.multiselect(
+        "Professional roles to find",
+        list(ROLE_SEARCH_TERMS.keys()),
+        default=["Recruiter", "Talent Acquisition", "HR", "Hiring Manager"],
+    )
+    if company.strip() and selected_roles:
+        search_url = build_public_search_url(company, selected_roles)
+        st.code(f'site:linkedin.com/in/ "{company}" (role keywords)')
+        st.link_button("Open public web search", search_url)
+        st.info("Review results manually. Add only relevant professional information that is publicly available and permitted for your use.")
+    else:
+        st.info("Select or enter a company and at least one role.")
 
 elif page == "Prospects":
     st.subheader("Professional prospects")
