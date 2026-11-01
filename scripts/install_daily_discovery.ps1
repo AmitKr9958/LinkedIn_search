@@ -27,5 +27,5 @@ Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Se
 
 Write-Host "Created task: $TaskName"
 Write-Host "Runs daily at 9:00 AM while you are logged in and your PC is awake."
-Write-Host "Logs: $LogDir\ daily-discovery.log"
+Write-Host "Logs: $LogDir\daily-discovery.log"
 Write-Host "To run immediately: Start-ScheduledTask -TaskName '$TaskName'"
