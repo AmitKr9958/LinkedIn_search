@@ -76,4 +76,3 @@ def test_discovered_profile_url_is_deduplicated(tmp_path, monkeypatch):
     assert repo.add_prospect_if_new(prospect) is True
     assert repo.add_prospect_if_new(prospect) is False
     assert len(repo.list_prospects()) == 1
-}
