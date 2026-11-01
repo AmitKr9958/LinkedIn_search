@@ -13,8 +13,7 @@ from pathlib import Path
 
 from linkpilot.config import get_settings
 from linkpilot.db import init_db
-from linkpilot.discovery import ROLE_QUERIES, DEFAULT_ROLES
-from linkpilot.public_search import PublicSearchError, search_public_professionals
+from linkpilot.public_search import DEFAULT_ROLES, ROLE_QUERIES, PublicSearchError, search_public_professionals
 from linkpilot.repository import Repository
 
 
