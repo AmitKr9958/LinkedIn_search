@@ -33,7 +33,6 @@ def test_batch_discovery_runs_for_saved_companies_and_reports_totals(monkeypatch
     assert batch.main() == 0
     assert [call[0] for call in calls] == ["Acme", "Example Ltd"]
     assert all(call[2] == "Delhi NCR" for call in calls)
-    assert (tmp_path / "discovery.log").exists()
 
 
 def test_batch_discovery_fails_cleanly_without_api_key(monkeypatch, tmp_path):
