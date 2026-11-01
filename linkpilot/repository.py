@@ -19,6 +19,32 @@ class Repository:
                          VALUES(?,?,?,?,?,?,?)""",
                       (full_name, company, title, category, profile_url, source_url, research_notes))
 
+    def add_prospect_if_new(self, prospect):
+        """Insert a discovered prospect only if its public profile URL is not already stored."""
+        profile_url = (prospect.get("profile_url") or "").strip().rstrip("/")
+        with connect() as c:
+            if profile_url:
+                existing = c.execute(
+                    "SELECT id FROM prospects WHERE lower(rtrim(profile_url, '/'))=lower(?) LIMIT 1",
+                    (profile_url,),
+                ).fetchone()
+                if existing:
+                    return False
+            c.execute(
+                """INSERT INTO prospects(full_name,company,title,category,profile_url,source_url,research_notes)
+                   VALUES(?,?,?,?,?,?,?)""",
+                (
+                    prospect.get("full_name", "Name not available"),
+                    prospect.get("company", ""),
+                    prospect.get("title", "Profile found — verify current role"),
+                    prospect.get("category", "Other"),
+                    profile_url,
+                    prospect.get("source_url", ""),
+                    prospect.get("research_notes", ""),
+                ),
+            )
+            return True
+
     def list_prospects(self):
         with connect() as c:
             return [dict(r) for r in c.execute("SELECT * FROM prospects ORDER BY created_at DESC,id DESC")]
