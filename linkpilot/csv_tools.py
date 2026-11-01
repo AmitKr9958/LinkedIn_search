@@ -36,5 +36,12 @@ def export_prospects_csv(rows):
     fields = ["full_name", "company", "title", "category", "profile_url", "source_url", "research_notes"]
     writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
-    writer.writerows(rows)
+    for row in rows:
+        safe_row = {}
+        for field in fields:
+            value = str(row.get(field, "") or "")
+            if value.startswith(("=", "+", "-", "@", "\\t", "\\r")):
+                value = "'" + value
+            safe_row[field] = value
+        writer.writerow(safe_row)
     return output.getvalue().encode("utf-8-sig")
