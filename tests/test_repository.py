@@ -3,9 +3,10 @@ from linkpilot.db import init_db
 from linkpilot.repository import Repository
 
 def test_company_prospect_draft_and_approval(tmp_path, monkeypatch):
-    import linkpilot.db as db
     import sqlite3
     from pathlib import Path
+    import linkpilot.db as db
+    import linkpilot.repository as repository_module
 
     def test_connect():
         conn = sqlite3.connect(Path(tmp_path) / "test.db")
@@ -14,6 +15,7 @@ def test_company_prospect_draft_and_approval(tmp_path, monkeypatch):
         return conn
 
     monkeypatch.setattr(db, "connect", test_connect)
+    monkeypatch.setattr(repository_module, "connect", test_connect)
     init_db()
     repo = Repository()
     repo.add_company("Acme", "", "", "Power BI")
