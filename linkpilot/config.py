@@ -8,6 +8,7 @@ class Settings:
     llm_api_key: str
     llm_model: str
     database_path: str
+    exa_api_key: str = ""
 
 def get_settings() -> Settings:
     load_dotenv()
@@ -16,4 +17,5 @@ def get_settings() -> Settings:
         llm_api_key=os.getenv("LLM_API_KEY", ""),
         llm_model=os.getenv("LLM_MODEL", ""),
         database_path=os.getenv("DATABASE_PATH", "data/linkpilot.db"),
+        exa_api_key=os.getenv("EXA_API_KEY", ""),
     )
